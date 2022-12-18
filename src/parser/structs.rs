@@ -15,8 +15,6 @@ pub enum Document {
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct Node {
     pub name: String,
-    pub id: Option<String>,
-    pub classes: HashSet<String>,
     pub attributes: Attributes,
     pub children: Vec<Document>
 }

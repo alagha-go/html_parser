@@ -74,16 +74,6 @@ impl Dom {
                         match attr_value {
                             None => (),
                             Some(value) => {
-                                match attr_key.as_str() {
-                                    "id" => element.id = Some(value.clone()),
-                                    "class" => {
-                                        let classes = value.split_whitespace().collect::<Vec<_>>();
-                                        for class in classes {
-                                            element.classes.insert(class.to_string());
-                                        }
-                                    },
-                                    _ => {}
-                                }
                                 element.attributes.insert(attr_key, value);
                             }
                         }
