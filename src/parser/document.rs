@@ -158,6 +158,52 @@ impl Document {
         res
     }
 
+    pub fn get_all_elements_by_attribute<'a>(&'a self, key: &str, value: &String) -> Vec<&Document> {
+        let mut documents = Vec::new();
+
+        let function = |document: &'a Document| {
+            match document {
+                Self::Element(node) => {
+                    if node.attributes.get(key) == Some(value) {
+                        documents.push(document)
+                    }
+                    false
+                },
+                _ => false,
+            }
+        };
+
+        self.for_each(function);
+        documents
+    }
+
+    pub fn get_element_by_attribute<'a>(&'a self, nth: usize, key: &str, value: &String) -> Option<&Document> {
+        let mut res = None;
+        let mut index = 0;
+
+        let function = |document: &'a Document| {
+            match document {
+                Self::Element(node) => {
+                    if node.attributes.get(key) == Some(value) {
+                        if nth == index {
+                            res = Some(document);
+                            true
+                        }else {
+                            index+=1;
+                            false
+                        }
+                    }else {
+                        false
+                    }
+                },
+                _ => false,
+            }
+        };
+
+        self.for_each(function);
+        res
+    }
+
     pub fn text<'a>(&'a self) -> Option<&String> {
         match self {
             Self::Comment(_) => None,
@@ -187,6 +233,62 @@ impl Document {
                 }
                 None
             }
+        }
+    }
+
+    pub fn name<'a>(&'a self) -> Option<&String> {
+        match self {
+            Self::Element(node) => Some(&node.name),
+            _ => None
+        }
+    }
+
+    pub fn attributes<'a>(&'a self) -> Option<&Attributes> {
+        match self {
+            Self::Element(node) => Some(&node.attributes),
+            _ => None
+        }
+    }
+
+    pub fn children<'a>(&'a self) -> Option<&Vec<Document>> {
+        match self {
+            Self::Element(node) => Some(&node.children),
+            _ => None
+        }
+    }
+
+    pub fn is_element(&self) -> bool {
+        match self {
+            Self::Element(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_text(&self) -> bool {
+        match self {
+            Self::Text(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_comment(&self) -> bool {
+        match self {
+            Self::Comment(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn id<'a>(&'a self) -> Option<&String> {
+        match self {
+            Self::Element(node) => node.attributes.get("id"),
+            _ => None
+        }
+    }
+
+    pub fn class<'a>(&'a self) -> Option<&String> {
+        match self {
+            Self::Element(node) => node.attributes.get("class"),
+            _ => None
         }
     }
 }
