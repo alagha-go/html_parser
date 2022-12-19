@@ -1,18 +1,19 @@
 impl Dom {
-    pub fn new(html: &str) -> Self {
-        Self::parse(html).unwrap()
+    pub fn new(html: &str) -> Result<Self> {
+        Self::parse(html)
     }
 
-     pub fn parse(input: &str) -> Result<Self, ()> {
+     pub fn parse(input: &str) -> Result<Self> {
         let pairs = match Grammar::parse(Rule::html, input) {
             Ok(pairs) => pairs,
-            Err(_error) => return Err(()),
+            Err(error) => return Result::Err(Box::new(Error::new(format!("{}", error)))),
         };
         Self::build_dom(pairs)
     }
 
 
-    fn build_dom(pairs: Pairs<Rule>) -> Result<Self, ()> {
+    fn build_dom(pairs: Pairs<Rule>) -> Result<Self> {
+        use self::Result::*;
         let mut dom = Self{documents: Vec::new()};
 
         for pair in pairs {
@@ -24,9 +25,7 @@ impl Dom {
                             dom.documents.push(Document::Element(node));
                         }
                     }
-                    Err(_error) => {
-                        ();
-                    }
+                    Err(error) => return Err(Box::new(Error::new(format!("{}", error))))
                 },
                 Rule::node_text => {
                     dom.documents.push(Document::Text(pair.as_str().to_string()));
@@ -42,7 +41,8 @@ impl Dom {
         Ok(dom)
     }
 
-    fn build_element(pairs: Pairs<Rule>, dom: &mut Dom) -> Result<Option<Node>, ()> {
+    fn build_element(pairs: Pairs<Rule>, dom: &mut Dom) -> Result<Option<Node>> {
+        use self::Result::*;
         let mut element = Node::default();
         for pair in pairs {
             match pair.as_rule() {
@@ -53,9 +53,7 @@ impl Dom {
                                 element.children.push(Document::Element(child_element))
                             }
                         }
-                        Err(_error) => {
-                            ();
-                        }
+                        Err(error) => return Err(Box::new(Error::new(format!("{}", error))))
                     }
                 },
                 Rule::node_text | Rule::el_raw_text_content => {
@@ -87,9 +85,7 @@ impl Dom {
                 }
                 Rule::el_dangling => (),
                 Rule::EOI => (),
-                _ => {
-                    panic!("unexpected rule: {:?}", pair.as_rule())
-                }
+                _ => return Err(Box::new(Error::new(format!("unexpected token: {:?}", pair))))
             }
         }
         Ok(Some(element))
@@ -97,7 +93,8 @@ impl Dom {
 
 
 
-    fn build_attribute(pairs: Pairs<Rule>) -> Result<(String, Option<String>), ()> {
+    fn build_attribute(pairs: Pairs<Rule>) -> Result<(String, Option<String>)> {
+        use self::Result::*;
         let mut attribute = ("".to_string(), None);
         for pair in pairs {
             match pair.as_rule() {

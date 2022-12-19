@@ -25,7 +25,7 @@ mod tests {
     </html>"#;
 
     #[dynamic]
-    static DOCUMENT: Document = Dom::new(HTML).documents[0].clone();
+    static DOCUMENT: Document = Dom::new(HTML).unwrap().documents[0].clone();
 
     use super::*;
     #[test]
