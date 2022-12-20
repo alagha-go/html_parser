@@ -13,7 +13,6 @@ impl Dom {
 
 
     fn build_dom(pairs: Pairs<Rule>) -> Result<Self> {
-        use self::Result::*;
         let mut dom = Self{documents: Vec::new()};
 
         for pair in pairs {
@@ -42,7 +41,6 @@ impl Dom {
     }
 
     fn build_element(pairs: Pairs<Rule>, dom: &mut Dom) -> Result<Option<Node>> {
-        use self::Result::*;
         let mut element = Node::default();
         for pair in pairs {
             match pair.as_rule() {
@@ -94,7 +92,6 @@ impl Dom {
 
 
     fn build_attribute(pairs: Pairs<Rule>) -> Result<(String, Option<String>)> {
-        use self::Result::*;
         let mut attribute = ("".to_string(), None);
         for pair in pairs {
             match pair.as_rule() {

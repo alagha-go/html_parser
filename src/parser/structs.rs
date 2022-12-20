@@ -64,8 +64,3 @@ impl Error {
         Self{source: ErrorSource(error)}
     }
 }
-
-pub enum Result<T> {
-    Ok(T),
-    Err(Box<dyn std::error::Error + 'static>)
-}
