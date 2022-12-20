@@ -204,6 +204,41 @@ impl Document {
         res
     }
 
+    pub fn attribute<'a>(&self, key: &str) -> Option<&String> {
+        match self {
+            Document::Element(node) => {
+                node.attributes.get(key)
+            },
+            _ => None
+        }
+    }
+
+    pub fn child_attribute<'a>(&self, nth: usize, key: &str) -> Option<&String> {
+        match self.children() {
+            Some(children) => {
+                let mut index = 0;
+                for child in children {
+                    match child.attributes() {
+                        Some(attributes) => {
+                            match attributes.get(key) {
+                                Some(attribute) => {
+                                    if index == nth {
+                                        return Some(attribute)
+                                    }
+                                    index+=1;
+                                },
+                                _ => ()
+                            }
+                        }
+                        _ => ()
+                    }
+                }
+                None
+            },
+            None => None,
+        }
+    }
+
     pub fn text<'a>(&'a self) -> Option<&String> {
         match self {
             Self::Comment(_) => None,
