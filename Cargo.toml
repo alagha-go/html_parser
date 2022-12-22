@@ -1,5 +1,5 @@
 [package]
-name = "html_parser"
+name = "html"
 version = "0.1.0"
 edition = "2021"
 

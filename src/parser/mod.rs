@@ -1,11 +1,12 @@
-use pest::{iterators::Pairs, Parser};
-use std::collections::HashMap;
-use std::collections::VecDeque;
+#![allow(dead_code, unused)]
+use pest::{iterators::Pair, iterators::Pairs, Parser};
+use std::collections::*;
 use pest_derive::Parser;
-
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+use std::*;
 
 include!("structs.rs");
-include!("node.rs");
-include!("dom.rs");
 include!("document.rs");
+include!("element.rs");
+include!("dom.rs");
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;

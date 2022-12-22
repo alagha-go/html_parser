@@ -1,0 +1,117 @@
+html = _{
+    SOI
+    ~ comment*
+    ~ doctype?
+    ~ document*
+    ~ EOI
+}
+
+doctype = { chevron_left_bang ~ ^"doctype" ~ attribute* ~ chevron_right_normal}
+
+document = _{ comment | element | text }
+comment = { comment_if | comment_normal }
+text = { (!(element | comment_tag_start) ~ ANY)+ }
+element = { void | void_xml | process_instruct | raw_text | normal | dangling }
+
+comment_normal = _{ comment_tag_start ~ comment_body ~ comment_tag_end }
+comment_body = { (!comment_tag_end ~ ANY)* }
+comment_tag_start = _{ chevron_left_bang ~ "--" }
+comment_tag_end = _{ "--" ~ chevron_right_normal }
+
+comment_if = _{ comment_if_start ~ comment_if_body ~ comment_if_end }
+comment_if_body = { (!comment_if_end ~ ANY)* }
+comment_if_start = _{ comment_tag_start ~ "[" ~ ^"if" }
+comment_if_end = _{ chevron_left_bang ~ "[" ~ ^"endif" ~ "]" ~ comment_tag_end }
+
+attribute = { attribute_key ~ (equal ~ (attribute_non_quoted | attribute_quoted ))? }
+
+attribute_quoted =  ${PUSH(quote) ~ attribute_value ~ POP }
+
+attribute_non_quoted = @{ !quote ~ (!(WHITESPACE | chevron_right) ~ ANY)* }
+
+attribute_key = { ASCII_ALPHA ~ chars* }
+
+attribute_value = { WHITESPACE* ~ (!PEEK ~ ANY)* ~ WHITESPACE* }
+
+name = @{ ASCII_ALPHA ~ chars* }
+
+void_name_html = @{
+    ^"area"
+    | ^"base"
+    | ^"br"
+    | ^"col"
+    | ^"command"
+    | ^"embed"
+    | ^"hr"
+    | ^"img"
+    | ^"input"
+    | ^"keygen"
+    | ^"link"
+    | ^"meta"
+    | ^"param"
+    | ^"source"
+    | ^"track"
+    | ^"wbr"
+    | ^"meta"
+}
+
+void_name_svg = @{
+    ^"path"
+    | ^"polygon"
+    | ^"rect"
+    | ^"circle"
+}
+void_name = @{ void_name_html | void_name_svg }
+void = _{ chevron_left_normal ~ void_name ~ attribute* ~ (chevron_right_normal | chevron_right_closed) }
+void_xml = _{ chevron_left_normal ~ name ~ attribute* ~ chevron_right_closed }
+
+normal = _{ normal_start ~ (!normal_end ~ document)* ~ normal_end }
+normal_start = _{ chevron_left_normal ~ PUSH(name) ~ attribute* ~ chevron_right_normal}
+normal_end = { chevron_left_closed ~ POP ~ chevron_right_normal}
+
+raw_text_name = {
+    ^"style"
+    | ^"script"
+    | ^"title"
+    | ^"textarea"
+}
+
+raw_text_content = { (!raw_text_end ~ ANY)* }
+raw_text = _{ raw_text_start ~ raw_text_content ~ raw_text_end }
+raw_text_start = _{ chevron_left_normal ~ PUSH(raw_text_name) ~ attribute* ~ chevron_right_normal}
+raw_text_end = { chevron_left_closed ~ POP ~ chevron_right_normal}
+
+process_instruct = { chevron_left_question ~ name? ~ attribute* ~ chevron_right_question }
+
+dangling = { chevron_left_closed ~ name ~ chevron_right_normal}
+
+chars = _{'a'..'z' | 'A'..'Z' | "_" | "-" | ":" |'0'..'9'}
+
+
+chevron_left_normal = _{ "<" }
+chevron_left_closed = _{ "</" }
+chevron_left_bang = _{ "<!" }
+chevron_left_question = _{ "<?" }
+chevron_left = _{ 
+	chevron_left_normal | 
+	chevron_left_closed | 
+	chevron_left_bang | 
+    chevron_left_question
+}
+
+chevron_right_normal = _{ ">" }
+chevron_right_closed = _{ "/>" }
+chevron_right_bang = _{ "!>" }
+chevron_right_question = _{ "?>" }
+chevron_right = _{
+    chevron_right_normal
+    | chevron_right_closed
+    | chevron_right_bang
+    | chevron_right_question
+}
+
+equal = _{"="}
+single_quote = _{"'"}
+double_quote = _{"\""}
+quote = _{ double_quote | single_quote }
+WHITESPACE = _{" " | "\t" | "\r" | "\n"}

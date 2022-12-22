@@ -1,4 +1,13 @@
 impl Document {
+    pub fn new<'a>(html: &str) -> Result<Self> {
+        let pairs = match HtmlParser::parse(Rule::html, html) {
+            Ok(pairs) => pairs,
+            Err(err) => return Err(err)?,
+        };
+        Ok(pairs.try_into()?)
+    }
+
+
     pub fn for_each<'a>(&'a self, mut function: impl FnMut(&'a Document) -> bool) {
         let mut que: VecDeque<Action<&Document>> = VecDeque::new();
         use Action::*;
@@ -8,9 +17,9 @@ impl Document {
             match action {
                 Call(document) => {
                     match document {
-                        Document::Element(node) => {
+                        Document::Element(element) => {
                             que.push_back(Handle(document));
-                            for document in &node.children {
+                            for document in &element.children {
                                 que.push_back(Call(document))
                             }
                         },
@@ -31,8 +40,8 @@ impl Document {
 
         let function = |document: &'a Document| {
             match document {
-                Document::Element(node) => {
-                    if node.attributes.get("id") == Some(id) {
+                Document::Element(element) => {
+                    if element.attributes.get("id") == Some(id) {
                         documents.push(document)
                     }
                     false
@@ -50,8 +59,8 @@ impl Document {
         let mut index = 0;
         let function = |document: &'a Document| {
             match document {
-                Document::Element(node) => {
-                    if node.attributes.get("id") == Some(id) {
+                Document::Element(element) => {
+                    if element.attributes.get("id") == Some(id) {
                         if index == nth {
                             res = Some(document);
                             true
@@ -75,8 +84,8 @@ impl Document {
 
         let function = |document: &'a Document| {
             match document {
-                Document::Element(node) => {
-                    if node.attributes.get("class") == Some(class) {
+                Document::Element(element) => {
+                    if element.attributes.get("class") == Some(class) {
                         documents.push(document)
                     }
                     false
@@ -94,8 +103,8 @@ impl Document {
         let mut index = 0;
         let function = |document: &'a Document| {
             match document {
-                Document::Element(node) => {
-                    if node.attributes.get("class") == Some(class) {
+                Document::Element(element) => {
+                    if element.attributes.get("class") == Some(class) {
                         if index == nth {
                             res = Some(document);
                             true
@@ -119,8 +128,8 @@ impl Document {
 
         let function = |document: &'a Document| {
             match document {
-                Document::Element(node) => {
-                    if node.name == *name {
+                Document::Element(element) => {
+                    if element.name == *name {
                         documents.push(document)
                     }
                     false
@@ -138,8 +147,8 @@ impl Document {
         let mut index = 0;
         let function = |document: &'a Document| {
             match document {
-                Document::Element(node) => {
-                    if node.name == *name {
+                Document::Element(element) => {
+                    if element.name == *name {
                         if index == nth {
                             res = Some(document);
                             true
@@ -163,8 +172,8 @@ impl Document {
 
         let function = |document: &'a Document| {
             match document {
-                Self::Element(node) => {
-                    if node.attributes.get(key) == Some(value) {
+                Self::Element(element) => {
+                    if element.attributes.get(key) == Some(value) {
                         documents.push(document)
                     }
                     false
@@ -183,8 +192,8 @@ impl Document {
 
         let function = |document: &'a Document| {
             match document {
-                Self::Element(node) => {
-                    if node.attributes.get(key) == Some(value) {
+                Self::Element(element) => {
+                    if element.attributes.get(key) == Some(value) {
                         if nth == index {
                             res = Some(document);
                             true
@@ -206,8 +215,8 @@ impl Document {
 
     pub fn attribute<'a>(&self, key: &str) -> Option<&String> {
         match self {
-            Document::Element(node) => {
-                node.attributes.get(key)
+            Document::Element(element) => {
+                element.attributes.get(key)
             },
             _ => None
         }
@@ -243,15 +252,16 @@ impl Document {
         match self {
             Self::Comment(_) => None,
             Self::Text(value) => Some(value),
-            Self::Element(node) => {
-                for child in &node.children {
+            Self::Element(element) => {
+                for child in &element.children {
                     match child {
                         Self::Text(value) => return Some(value),
                         _ => ()
                     }
                 }
                 None
-            }
+            },
+            Self::None => None
         }
     }
 
@@ -259,35 +269,36 @@ impl Document {
         match self {
             Self::Text(_) => None,
             Self::Comment(comment) => Some(comment),
-            Self::Element(node) => {
-                for child in &node.children {
+            Self::Element(element) => {
+                for child in &element.children {
                     match child {
                         Self::Comment(comment) => return Some(comment),
                         _ => ()
                     }
                 }
                 None
-            }
+            },
+            Self::None => None
         }
     }
 
     pub fn name<'a>(&'a self) -> Option<&String> {
         match self {
-            Self::Element(node) => Some(&node.name),
+            Self::Element(element) => Some(&element.name),
             _ => None
         }
     }
 
     pub fn attributes<'a>(&'a self) -> Option<&Attributes> {
         match self {
-            Self::Element(node) => Some(&node.attributes),
+            Self::Element(element) => Some(&element.attributes),
             _ => None
         }
     }
 
     pub fn children<'a>(&'a self) -> Option<&Vec<Document>> {
         match self {
-            Self::Element(node) => Some(&node.children),
+            Self::Element(element) => Some(&element.children),
             _ => None
         }
     }
@@ -315,15 +326,64 @@ impl Document {
 
     pub fn id<'a>(&'a self) -> Option<&String> {
         match self {
-            Self::Element(node) => node.attributes.get("id"),
+            Self::Element(element) => element.attributes.get("id"),
             _ => None
         }
     }
 
     pub fn class<'a>(&'a self) -> Option<&String> {
         match self {
-            Self::Element(node) => node.attributes.get("class"),
+            Self::Element(element) => element.attributes.get("class"),
             _ => None
         }
+    }
+}
+
+
+impl fmt::Debug for Document {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug = String::new();
+        match self {
+            Self::Element(element) => {
+                let string = format!("{element:#?}");
+                debug.push_str(&string);
+            },
+            Self::Text(text) => {
+                let string = format!("{text:?}");
+                debug.push_str(&string);
+            },
+            Self::Comment(comment) => {
+                let string = format!("<!-- {comment:?} -->");
+                debug.push_str(&string);
+            },
+            Self::None => ()
+        }
+        write!(f, "{debug}", )
+    }
+}
+
+
+impl<'i> TryFrom<Pairs<'i, Rule>> for Document {
+    type Error = Box<dyn std::error::Error>;
+    fn try_from(pairs: Pairs<Rule>) -> Result<Self> {
+        let mut document = Document::default();
+        for pair in pairs {
+            match pair.as_rule() {
+                Rule::comment => {
+                    document = Document::Comment(pair.into_inner().as_str().to_string());
+                    break
+                },
+                Rule::text => {
+                    document = Document::Text(pair.as_str().to_string());
+                    break
+                },
+                Rule::element => {
+                    document = Document::Element(pair.into_inner().try_into()?);
+                    break
+                },
+                _ => ()
+            }
+        }
+        Ok(document)
     }
 }
